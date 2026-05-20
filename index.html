@@ -222,9 +222,9 @@ const STORES = {
     parse: parseUSAGS
   },
   newtype: {
-    // Direct from browser — Cloudflare blocks server requests but allows browsers
-    viaServer: false,
-    directUrl: q => `https://newtype.us/search/suggest.json?q=${enc(q)}&resources%5Btype%5D=product&resources%5Blimit%5D=12&resources%5Bfields%5D=title%2Cvariants.title%2Cprice%2Cavailable`,
+    // Via Render server + ScraperAPI to bypass Cloudflare
+    viaServer: true,
+    apiPath: q => `/search?store=newtype&q=${enc(q)}`,
     search:  q => `https://newtype.us/search?q=${enc(q)}`,
     parse: parseNewtype
   },
