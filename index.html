@@ -12,12 +12,10 @@
   body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
   .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:40px 24px 60px}
-
   header{text-align:center;margin-bottom:36px}
   .logo{font-family:'Orbitron',monospace;font-size:clamp(26px,5vw,46px);font-weight:800;letter-spacing:2px;line-height:1}
   .logo em{font-style:normal;color:var(--accent);text-shadow:0 0 30px rgba(59,130,246,.5)}
   .tagline{margin-top:10px;color:var(--muted);font-size:12px;letter-spacing:1.5px;text-transform:uppercase}
-
   .search-block{max-width:700px;margin:0 auto 36px}
   .search-row{display:flex;gap:10px}
   .input-wrap{flex:1;display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color .2s,box-shadow .2s}
@@ -31,12 +29,9 @@
   #searchBtn:hover{background:#2563eb}
   #searchBtn:active{transform:scale(.97)}
   #searchBtn:disabled{background:var(--border);box-shadow:none;cursor:not-allowed}
-
-  /* typing indicator */
   #typingDot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:8px;opacity:0;transition:opacity .2s;vertical-align:middle}
   #typingDot.vis{opacity:1;animation:pulse 1s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
-
   .store-filters{display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap}
   .fp{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;user-select:none}
   .fp input{display:none}
@@ -45,76 +40,63 @@
   .fp[data-s=newtype].on{border-color:var(--newtype);color:var(--newtype)}
   .fp[data-s=gpros].on{border-color:var(--gpros);color:var(--gpros)}
   .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
-
-  /* sort control */
   .sort-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-size:12px;color:var(--muted)}
-  .sort-row label{color:var(--muted)}
   .sort-select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;outline:none;font-family:'DM Sans',sans-serif}
   .sort-select:focus{border-color:var(--accent)}
-
   #statusBar{display:none;gap:6px;align-items:center;justify-content:center;margin-bottom:20px;font-size:12px;color:var(--muted)}
   #statusBar.vis{display:flex}
   .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
   @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* cache badge */
   .cache-badge{font-size:10px;background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.2);padding:2px 8px;border-radius:10px;margin-left:8px}
-
   #resultsArea{display:none}
   #resultsArea.vis{display:block}
   .meta{text-align:center;margin-bottom:22px;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px}
   .meta strong{color:var(--text);font-size:14px}
-
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   @media(max-width:800px){.grid{grid-template-columns:1fr}}
-
   .scol{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .scol.hide{display:none}
   .scol-usags{border-top:2px solid var(--usags)}
   .scol-newtype{border-top:2px solid var(--newtype)}
   .scol-gpros{border-top:2px solid var(--gpros)}
-
   .scol-head{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2)}
   .scol-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
   .scol-usags .scol-name{color:var(--usags)}
   .scol-newtype .scol-name{color:var(--newtype)}
   .scol-gpros .scol-name{color:var(--gpros)}
   .scol-cnt{font-size:11px;color:var(--muted)}
-
   .sitems{overflow-y:auto;max-height:440px;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
   .sitems::-webkit-scrollbar{width:3px}
   .sitems::-webkit-scrollbar-thumb{background:var(--border)}
-
   .pcard{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(30,45,69,.5);text-decoration:none;color:inherit;transition:background .12s}
   .pcard:last-child{border-bottom:none}
   .pcard:hover{background:var(--surface2)}
   .pinfo{flex:1;min-width:0}
   .pname{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
   .pprice{font-size:11px;color:var(--muted);margin-top:3px}
-
   .spill{flex-shrink:0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px;font-family:'Orbitron',monospace}
   .s-in{background:rgba(74,222,128,.1);color:var(--in);border:1px solid rgba(74,222,128,.2)}
   .s-out{background:rgba(248,113,113,.1);color:var(--out);border:1px solid rgba(248,113,113,.2)}
   .s-pre{background:rgba(251,191,36,.1);color:var(--pre);border:1px solid rgba(251,191,36,.2)}
-
   .skcard{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(30,45,69,.5)}
   .sk{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:300% 100%;animation:shim 1.5s infinite;border-radius:4px}
   .sk-n{height:12px;width:65%}.sk-p{height:10px;width:30%;margin-top:5px}.sk-b{height:20px;width:55px;flex-shrink:0}
   @keyframes shim{0%{background-position:300% 0}100%{background-position:-300% 0}}
-
   .sempty{padding:28px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}
   .sempty .ei{font-size:24px;margin-bottom:8px}
-
   .openlink{display:block;margin:10px 16px 14px;padding:8px;text-align:center;border:1px dashed var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:11px;transition:all .15s}
   .openlink:hover{border-color:var(--accent);color:var(--accent)}
-
   #initialState{text-align:center;padding:60px 20px;color:var(--muted)}
   #initialState .bi{font-size:52px;margin-bottom:16px;display:block}
   #initialState p{font-size:14px;line-height:1.7;max-width:400px;margin:0 auto}
-
   .tip-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:10px 16px;margin-bottom:24px;font-size:12px;color:var(--muted);line-height:1.7;display:none}
   .tip-box.vis{display:block}
   .tip-box b{color:var(--text)}
+  /* server config banner */
+  #configBanner{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:12px 18px;margin-bottom:28px;font-size:12px;color:var(--pre);line-height:1.7;text-align:center}
+  #configBanner b{color:#fff}
+  #configBanner a{color:var(--accent);text-decoration:underline}
+  #configBanner.hidden{display:none}
 </style>
 </head>
 <body>
@@ -124,6 +106,13 @@
     <div class="logo">GUNPLA <em>SCOUT</em></div>
     <div class="tagline">Buscador de stock · USAGS · Newtype · GundamPros</div>
   </header>
+
+  <!-- shown until server URL is configured -->
+  <div id="configBanner">
+    ⚙ <b>Configuración pendiente:</b> Pegá la URL de tu servidor Render abajo para activar las búsquedas.<br/>
+    <input id="serverInput" type="text" placeholder="https://gunpla-scout-api.onrender.com" style="margin-top:8px;width:100%;max-width:420px;background:#0e1420;border:1px solid #1e2d45;color:#cdd8f0;padding:7px 12px;border-radius:6px;font-size:12px;outline:none"/>
+    <button onclick="saveServer()" style="margin-left:8px;background:#3b82f6;color:#fff;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:12px">Guardar</button>
+  </div>
 
   <div class="search-block">
     <div class="search-row">
@@ -186,344 +175,186 @@
 
 </div>
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
-const DEBOUNCE_MS = 500;
+const CACHE_TTL  = 5 * 60 * 1000;
+const DEBOUNCE   = 500;
 const TIMEOUT_MS = 8000;
+
+// ── SERVER URL — set by user after Render deploy ──────────────────────────────
+let SERVER_URL = localStorage.getItem('gsServerUrl') || '';
+
+function saveServer() {
+  const val = document.getElementById('serverInput').value.trim().replace(/\/$/, '');
+  if (!val) return;
+  SERVER_URL = val;
+  localStorage.setItem('gsServerUrl', val);
+  document.getElementById('configBanner').classList.add('hidden');
+}
+
+// Hide banner if already configured
+if (SERVER_URL) {
+  document.getElementById('configBanner').classList.add('hidden');
+} else {
+  document.getElementById('serverInput').value = '';
+}
 
 const STORES = {
   usags: {
-    api:    q => `https://www.usagundamstore.com/search/suggest.json?q=${enc(q)}&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available`,
-    search: q => `https://www.usagundamstore.com/search?q=${enc(q)}&type=product`,
+    apiPath: q => `/fetch?url=${enc('https://www.usagundamstore.com/search/suggest.json?q=' + enc(q) + '&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available')}`,
+    search:  q => `https://www.usagundamstore.com/search?q=${enc(q)}&type=product`,
     parse: parseUSAGS
   },
   newtype: {
-    api:    q => `https://newtype.us/search/suggest.json?q=${enc(q)}&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available`,
-    search: q => `https://newtype.us/search?q=${enc(q)}`,
+    apiPath: q => `/fetch?url=${enc('https://newtype.us/search/suggest.json?q=' + enc(q) + '&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available')}`,
+    search:  q => `https://newtype.us/search?q=${enc(q)}`,
     parse: parseNewtype
   },
   gpros: {
-    api:    q => `https://www.gundampros.shop/wp-json/wc/store/v1/products?search=${enc(q)}&per_page=12&status=publish`,
-    search: q => `https://www.gundampros.shop/?s=${enc(q)}&post_type=product`,
+    apiPath: q => `/fetch?url=${enc('https://www.gundampros.shop/wp-json/wc/store/v1/products?search=' + enc(q) + '&per_page=12&status=publish')}`,
+    search:  q => `https://www.gundampros.shop/?s=${enc(q)}&post_type=product`,
     parse: parseGpros
   }
 };
 
-// ── CACHE ─────────────────────────────────────────────────────────────────────
-const cache = new Map(); // key: "storeId:query" → {ts, items}
+const cache = new Map();
+function cacheGet(s,q){ const h=cache.get(`${s}:${q.toLowerCase().trim()}`); return h&&Date.now()-h.ts<CACHE_TTL?h.items:null; }
+function cacheSet(s,q,items){ cache.set(`${s}:${q.toLowerCase().trim()}`,{ts:Date.now(),items}); }
 
-function cacheGet(storeId, q) {
-  const key = `${storeId}:${q.toLowerCase().trim()}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.ts < CACHE_TTL) return hit.items;
-  return null;
-}
-function cacheSet(storeId, q, items) {
-  cache.set(`${storeId}:${q.toLowerCase().trim()}`, {ts: Date.now(), items});
-}
+const active={usags:true,newtype:true,gpros:true};
+let busy=false, debTimer=null, lastQ='';
+const storedResults={};
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-const active = {usags:true, newtype:true, gpros:true};
-let busy = false;
-let debounceTimer = null;
-let lastQuery = '';
+const qEl=document.getElementById('q'), searchBtn=document.getElementById('searchBtn'),
+      clearBtn=document.getElementById('clearBtn'), statusBar=document.getElementById('statusBar'),
+      statusTxt=document.getElementById('statusTxt'), resultsArea=document.getElementById('resultsArea'),
+      initial=document.getElementById('initialState'), metaEl=document.getElementById('meta'),
+      tipBox=document.getElementById('tipBox'), sortSel=document.getElementById('sortSel'),
+      typingDot=document.getElementById('typingDot');
 
-// ── ELEMENTS ──────────────────────────────────────────────────────────────────
-const qEl       = document.getElementById('q');
-const searchBtn = document.getElementById('searchBtn');
-const clearBtn  = document.getElementById('clearBtn');
-const statusBar = document.getElementById('statusBar');
-const statusTxt = document.getElementById('statusTxt');
-const results   = document.getElementById('resultsArea');
-const initial   = document.getElementById('initialState');
-const metaEl    = document.getElementById('meta');
-const tipBox    = document.getElementById('tipBox');
-const sortSel   = document.getElementById('sortSel');
-const typingDot = document.getElementById('typingDot');
-
-// ── FILTERS ───────────────────────────────────────────────────────────────────
-document.querySelectorAll('.fp').forEach(p => {
-  p.addEventListener('click', () => {
-    const s = p.dataset.s;
-    active[s] = !active[s];
-    p.classList.toggle('on', active[s]);
-    p.querySelector('input').checked = active[s];
-    document.getElementById(`col-${s}`).classList.toggle('hide', !active[s]);
+document.querySelectorAll('.fp').forEach(p=>{
+  p.addEventListener('click',()=>{
+    const s=p.dataset.s; active[s]=!active[s];
+    p.classList.toggle('on',active[s]); p.querySelector('input').checked=active[s];
+    document.getElementById(`col-${s}`).classList.toggle('hide',!active[s]);
   });
 });
 
-// Re-sort on change without re-fetching
-sortSel.addEventListener('change', () => {
-  if (lastQuery) rerenderAll();
+sortSel.addEventListener('change',()=>{ if(lastQ) rerenderAll(); });
+
+qEl.addEventListener('input',()=>{
+  const v=qEl.value.trim();
+  clearBtn.style.display=v?'block':'none';
+  if(!v){typingDot.classList.remove('vis');clearDeb();return;}
+  typingDot.classList.add('vis'); clearDeb();
+  debTimer=setTimeout(()=>{typingDot.classList.remove('vis');go(v);},DEBOUNCE);
 });
+qEl.addEventListener('keydown',e=>{if(e.key==='Enter'){clearDeb();typingDot.classList.remove('vis');go(qEl.value.trim());}});
+clearBtn.addEventListener('click',()=>{qEl.value='';clearBtn.style.display='none';clearDeb();typingDot.classList.remove('vis');qEl.focus();});
+searchBtn.addEventListener('click',()=>{clearDeb();typingDot.classList.remove('vis');go(qEl.value.trim());});
+function clearDeb(){if(debTimer){clearTimeout(debTimer);debTimer=null;}}
 
-// ── INPUT & DEBOUNCE ──────────────────────────────────────────────────────────
-qEl.addEventListener('input', () => {
-  const val = qEl.value.trim();
-  clearBtn.style.display = val ? 'block' : 'none';
+function rerenderAll(){ Object.keys(storedResults).forEach(s=>{ if(storedResults[s]) renderStore(s,storedResults[s]); }); }
 
-  if (!val) {
-    typingDot.classList.remove('vis');
-    clearDebounce();
-    return;
-  }
+async function go(q){
+  if(!q||busy) return;
+  if(!SERVER_URL){ alert('Primero configurá la URL de tu servidor Render arriba.'); return; }
+  if(q===lastQ) return;
+  const enabled=Object.keys(active).filter(s=>active[s]);
+  if(!enabled.length) return;
 
-  typingDot.classList.add('vis');
-  clearDebounce();
-  debounceTimer = setTimeout(() => {
-    typingDot.classList.remove('vis');
-    go(val);
-  }, DEBOUNCE_MS);
-});
+  lastQ=q; busy=true;
+  searchBtn.disabled=true; searchBtn.textContent='...';
+  initial.style.display='none'; tipBox.classList.remove('vis');
+  resultsArea.classList.add('vis'); statusBar.classList.add('vis');
+  statusTxt.textContent='Buscando...'; metaEl.innerHTML='';
 
-qEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    clearDebounce();
-    typingDot.classList.remove('vis');
-    go(qEl.value.trim());
-  }
-});
-
-clearBtn.addEventListener('click', () => {
-  qEl.value = '';
-  clearBtn.style.display = 'none';
-  clearDebounce();
-  typingDot.classList.remove('vis');
-  qEl.focus();
-});
-
-searchBtn.addEventListener('click', () => {
-  clearDebounce();
-  typingDot.classList.remove('vis');
-  go(qEl.value.trim());
-});
-
-function clearDebounce() {
-  if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-}
-
-// ── STORED RESULTS (for re-sort) ──────────────────────────────────────────────
-const storedResults = {};
-
-function rerenderAll() {
-  Object.keys(storedResults).forEach(s => {
-    if (storedResults[s]) renderStore(s, storedResults[s]);
-  });
-}
-
-// ── SEARCH ────────────────────────────────────────────────────────────────────
-async function go(q) {
-  if (!q || busy) return;
-  if (q === lastQuery) return; // same query, skip
-  const enabled = Object.keys(active).filter(s => active[s]);
-  if (!enabled.length) return;
-
-  lastQuery = q;
-  busy = true;
-  searchBtn.disabled = true;
-  searchBtn.textContent = '...';
-  initial.style.display = 'none';
-  tipBox.classList.remove('vis');
-  results.classList.add('vis');
-  statusBar.classList.add('vis');
-  statusTxt.textContent = 'Buscando...';
-  metaEl.innerHTML = '';
-
-  // Skeletons & links
-  enabled.forEach(s => {
+  enabled.forEach(s=>{
     showSkeleton(s);
     document.getElementById(`col-${s}`).classList.remove('hide');
-    document.getElementById(`lnk-${s}`).href = STORES[s].search(q);
-    storedResults[s] = null;
+    document.getElementById(`lnk-${s}`).href=STORES[s].search(q);
+    storedResults[s]=null;
   });
-  Object.keys(active).filter(s => !active[s]).forEach(s =>
-    document.getElementById(`col-${s}`).classList.add('hide')
-  );
+  Object.keys(active).filter(s=>!active[s]).forEach(s=>document.getElementById(`col-${s}`).classList.add('hide'));
 
-  let fromCacheCount = 0;
-  await Promise.all(enabled.map(async s => {
-    const cached = cacheGet(s, q);
-    if (cached) {
-      fromCacheCount++;
-      storedResults[s] = {items: cached, fromCache: true};
-      renderStore(s, storedResults[s]);
-      return;
-    }
-    try {
-      const data = await fetchStore(s, q);
-      cacheSet(s, q, data.items);
-      storedResults[s] = data;
-    } catch(e) {
-      storedResults[s] = {items:[], error: e.message};
-    }
-    renderStore(s, storedResults[s]);
+  let fromCache=0;
+  await Promise.all(enabled.map(async s=>{
+    const cached=cacheGet(s,q);
+    if(cached){ fromCache++; storedResults[s]={items:cached,fromCache:true}; renderStore(s,storedResults[s]); return; }
+    try{
+      const data=await fetchStore(s,q);
+      cacheSet(s,q,data.items); storedResults[s]=data;
+    }catch(e){ storedResults[s]={items:[],error:e.message}; }
+    renderStore(s,storedResults[s]);
   }));
 
-  const total = enabled.reduce((n,s) => n + (storedResults[s]?.items?.length||0), 0);
-  const cacheNote = fromCacheCount > 0 ? `<span class="cache-badge">⚡ cache</span>` : '';
-  metaEl.innerHTML = `Resultados para <strong>"${esc(q)}"</strong> — ${total} producto${total!==1?'s':''} encontrado${total!==1?'s':''} ${cacheNote}`;
-
-  statusBar.classList.remove('vis');
-  tipBox.classList.add('vis');
-  busy = false;
-  searchBtn.disabled = false;
-  searchBtn.textContent = 'BUSCAR';
+  const total=enabled.reduce((n,s)=>n+(storedResults[s]?.items?.length||0),0);
+  const cn=fromCache?`<span class="cache-badge">⚡ cache</span>`:'';
+  metaEl.innerHTML=`Resultados para <strong>"${esc(q)}"</strong> — ${total} producto${total!==1?'s':''} encontrado${total!==1?'s':''} ${cn}`;
+  statusBar.classList.remove('vis'); tipBox.classList.add('vis');
+  busy=false; searchBtn.disabled=false; searchBtn.textContent='BUSCAR';
 }
 
-// ── FETCH ─────────────────────────────────────────────────────────────────────
-async function fetchStore(storeId, q) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(STORES[storeId].api(q), {
-      headers: {'Accept': 'application/json'},
-      signal: controller.signal
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    return {items: STORES[storeId].parse(json).slice(0, 12)};
-  } catch(e) {
-    if (e.name === 'AbortError') throw new Error('Tiempo de espera agotado (8s)');
+async function fetchStore(storeId,q){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
+  try{
+    const res=await fetch(SERVER_URL+STORES[storeId].apiPath(q),{headers:{'Accept':'application/json'},signal:controller.signal});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json=await res.json();
+    return{items:STORES[storeId].parse(json).slice(0,12)};
+  }catch(e){
+    if(e.name==='AbortError') throw new Error('Tiempo agotado (8s)');
     throw e;
-  } finally {
-    clearTimeout(timer);
-  }
+  }finally{ clearTimeout(timer); }
 }
 
-// ── PARSERS ───────────────────────────────────────────────────────────────────
-function parseUSAGS(json) {
-  const prods = json?.resources?.results?.products || [];
-  return prods.map(p => ({
-    name:  p.title || '',
-    url:   p.url ? 'https://www.usagundamstore.com' + p.url : '',
-    price: parseShopifyPrice(p),
-    priceNum: parseShopifyPriceNum(p),
-    stock: p.available_for_sale !== false ? 'En stock' : 'Sin stock'
-  })).filter(p => p.name);
+function parseUSAGS(json){
+  const p=json?.resources?.results?.products||[];
+  return p.map(p=>({name:p.title||'',url:p.url?'https://www.usagundamstore.com'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
+}
+function parseNewtype(json){
+  const p=json?.resources?.results?.products||[];
+  return p.map(p=>({name:p.title||'',url:p.url?'https://newtype.us'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
+}
+function parseGpros(json){
+  const p=Array.isArray(json)?json:(json?.products||[]);
+  return p.map(p=>{
+    const inStock=p.is_in_stock!==false&&p.stock_status!=='outofstock';
+    const pr=p.prices?.price?parseInt(p.prices.price)/100:null;
+    return{name:p.name||'',url:p.permalink||'',price:pr?`$${pr.toFixed(2)}`:'',priceNum:pr||9999,stock:p.stock_status==='onbackorder'?'Pre-order':inStock?'En stock':'Sin stock'};
+  }).filter(p=>p.name);
+}
+function shopPrice(p){ if(p.price) return `$${(parseFloat(p.price)/100).toFixed(2)}`; if(p.variants?.[0]?.price) return `$${p.variants[0].price}`; return ''; }
+function shopPriceNum(p){ if(p.price) return parseFloat(p.price)/100; if(p.variants?.[0]?.price) return parseFloat(p.variants[0].price); return 9999; }
+
+function sortItems(items){
+  const m=sortSel.value; if(m==='none') return items;
+  const c=[...items];
+  const so=s=>{if(!s)return 0;const l=s.toLowerCase();if(l.includes('en stock'))return 0;if(l.includes('pre'))return 1;return 2;};
+  if(m==='smart') c.sort((a,b)=>{const d=so(a.stock)-so(b.stock);return d!==0?d:(a.priceNum||9999)-(b.priceNum||9999);});
+  else if(m==='price_asc') c.sort((a,b)=>(a.priceNum||9999)-(b.priceNum||9999));
+  else if(m==='price_desc') c.sort((a,b)=>(b.priceNum||9999)-(a.priceNum||9999));
+  return c;
 }
 
-function parseNewtype(json) {
-  const prods = json?.resources?.results?.products || [];
-  return prods.map(p => ({
-    name:  p.title || '',
-    url:   p.url ? 'https://newtype.us' + p.url : '',
-    price: parseShopifyPrice(p),
-    priceNum: parseShopifyPriceNum(p),
-    stock: p.available_for_sale !== false ? 'En stock' : 'Sin stock'
-  })).filter(p => p.name);
+function showSkeleton(s){
+  document.getElementById(`items-${s}`).innerHTML=[1,2,3,4].map(()=>`<div class="skcard"><div style="flex:1"><div class="sk sk-n"></div><div class="sk sk-p"></div></div><div class="sk sk-b"></div></div>`).join('');
+  document.getElementById(`cnt-${s}`).textContent='';
 }
-
-function parseGpros(json) {
-  const prods = Array.isArray(json) ? json : (json?.products || []);
-  return prods.map(p => {
-    const inStock = p.is_in_stock !== false && p.stock_status !== 'outofstock';
-    const onBack  = p.stock_status === 'onbackorder';
-    const priceRaw = p.prices?.price ? parseInt(p.prices.price)/100 : null;
-    return {
-      name:     p.name || '',
-      url:      p.permalink || '',
-      price:    priceRaw ? `$${priceRaw.toFixed(2)}` : '',
-      priceNum: priceRaw || 9999,
-      stock:    onBack ? 'Pre-order' : inStock ? 'En stock' : 'Sin stock'
-    };
-  }).filter(p => p.name);
-}
-
-// Shopify price helpers
-function parseShopifyPrice(p) {
-  if (p.price) return `$${(parseFloat(p.price)/100).toFixed(2)}`;
-  if (p.variants?.[0]?.price) return `$${p.variants[0].price}`;
-  return '';
-}
-function parseShopifyPriceNum(p) {
-  if (p.price) return parseFloat(p.price)/100;
-  if (p.variants?.[0]?.price) return parseFloat(p.variants[0].price);
-  return 9999;
-}
-
-// ── SORT ──────────────────────────────────────────────────────────────────────
-function sortItems(items) {
-  const mode = sortSel.value;
-  if (mode === 'none') return items;
-
-  const copy = [...items];
-  const stockOrder = s => {
-    if (!s) return 0;
-    const l = s.toLowerCase();
-    if (l.includes('en stock')) return 0;
-    if (l.includes('pre')) return 1;
-    return 2; // sin stock
-  };
-
-  if (mode === 'smart') {
-    copy.sort((a,b) => {
-      const sd = stockOrder(a.stock) - stockOrder(b.stock);
-      if (sd !== 0) return sd;
-      return (a.priceNum||9999) - (b.priceNum||9999);
-    });
-  } else if (mode === 'price_asc') {
-    copy.sort((a,b) => (a.priceNum||9999) - (b.priceNum||9999));
-  } else if (mode === 'price_desc') {
-    copy.sort((a,b) => (b.priceNum||9999) - (a.priceNum||9999));
-  }
-  return copy;
-}
-
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function showSkeleton(s) {
-  document.getElementById(`items-${s}`).innerHTML =
-    [1,2,3,4].map(()=>`<div class="skcard"><div style="flex:1"><div class="sk sk-n"></div><div class="sk sk-p"></div></div><div class="sk sk-b"></div></div>`).join('');
-  document.getElementById(`cnt-${s}`).textContent = '';
-}
-
-function renderStore(s, data) {
-  const el  = document.getElementById(`items-${s}`);
-  const cnt = document.getElementById(`cnt-${s}`);
-
-  if (data.error) {
-    el.innerHTML = `<div class="sempty"><div class="ei">⚠️</div>No se pudo conectar.<br/><small style="opacity:.6">${esc(data.error)}</small></div>`;
-    cnt.textContent = 'Error';
-    return;
-  }
-
-  const items = sortItems(data.items || []);
-  cnt.textContent = items.length
-    ? `${items.length} resultado${items.length>1?'s':''}`
-    : 'Sin resultados';
-
-  if (!items.length) {
-    el.innerHTML = `<div class="sempty"><div class="ei">🔍</div>Sin resultados.<br/>Probá con palabras más cortas.</div>`;
-    return;
-  }
-
-  el.innerHTML = items.map(item => {
-    const cls = stockClass(item.stock);
-    const lbl = stockLabel(item.stock);
-    const pr  = item.price ? `<div class="pprice">${esc(item.price)}</div>` : '';
-    return `<a class="pcard" href="${esc(item.url)}" target="_blank" title="${esc(item.name)}">
-      <div class="pinfo"><div class="pname">${esc(item.name)}</div>${pr}</div>
-      <span class="spill ${cls}">${lbl}</span>
-    </a>`;
+function renderStore(s,data){
+  const el=document.getElementById(`items-${s}`),cnt=document.getElementById(`cnt-${s}`);
+  if(data.error){el.innerHTML=`<div class="sempty"><div class="ei">⚠️</div>No se pudo conectar.<br/><small style="opacity:.6">${esc(data.error)}</small></div>`;cnt.textContent='Error';return;}
+  const items=sortItems(data.items||[]);
+  cnt.textContent=items.length?`${items.length} resultado${items.length>1?'s':''}`:'Sin resultados';
+  if(!items.length){el.innerHTML=`<div class="sempty"><div class="ei">🔍</div>Sin resultados.<br/>Probá con palabras más cortas.</div>`;return;}
+  el.innerHTML=items.map(item=>{
+    const cls=sClass(item.stock),lbl=sLabel(item.stock),pr=item.price?`<div class="pprice">${esc(item.price)}</div>`:'';
+    return `<a class="pcard" href="${esc(item.url)}" target="_blank" title="${esc(item.name)}"><div class="pinfo"><div class="pname">${esc(item.name)}</div>${pr}</div><span class="spill ${cls}">${lbl}</span></a>`;
   }).join('');
 }
-
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function stockClass(s){
-  if(!s) return 's-in';
-  const l=s.toLowerCase();
-  if(l.includes('sin')||l.includes('out')||l.includes('sold')) return 's-out';
-  if(l.includes('pre')||l.includes('order')||l.includes('back')) return 's-pre';
-  return 's-in';
-}
-function stockLabel(s){
-  if(!s) return 'En stock';
-  const l=s.toLowerCase();
-  if(l.includes('sin')||l.includes('out')||l.includes('sold')) return 'Sin stock';
-  if(l.includes('pre')||l.includes('order')||l.includes('back')) return 'Pre-order';
-  return 'En stock';
-}
-function enc(s){ return encodeURIComponent(s); }
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sClass(s){if(!s)return 's-in';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 's-out';if(l.includes('pre')||l.includes('back'))return 's-pre';return 's-in';}
+function sLabel(s){if(!s)return 'En stock';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 'Sin stock';if(l.includes('pre')||l.includes('back'))return 'Pre-order';return 'En stock';}
+function enc(s){return encodeURIComponent(s);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>
