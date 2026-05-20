@@ -199,16 +199,22 @@ if (SERVER_URL) {
 
 const STORES = {
   usags: {
+    // Via Render server — uses search.json (standard Shopify endpoint)
+    viaServer: true,
     apiPath: q => `/search?store=usags&q=${enc(q)}`,
     search:  q => `https://www.usagundamstore.com/search?q=${enc(q)}&type=product`,
     parse: parseUSAGS
   },
   newtype: {
-    apiPath: q => `/search?store=newtype&q=${enc(q)}`,
+    // Direct from browser — Cloudflare blocks server requests but allows browsers
+    viaServer: false,
+    directUrl: q => `https://newtype.us/search/suggest.json?q=${enc(q)}&resources%5Btype%5D=product&resources%5Blimit%5D=12&resources%5Bfields%5D=title%2Cvariants.title%2Cprice%2Cavailable`,
     search:  q => `https://newtype.us/search?q=${enc(q)}`,
     parse: parseNewtype
   },
   gpros: {
+    // Via Render server
+    viaServer: true,
     apiPath: q => `/search?store=gpros&q=${enc(q)}`,
     search:  q => `https://www.gundampros.shop/?s=${enc(q)}&post_type=product`,
     parse: parseGpros
@@ -294,13 +300,22 @@ async function go(q){
 }
 
 async function fetchStore(storeId,q){
+  const store = STORES[storeId];
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
   try{
-    const res=await fetch(SERVER_URL+STORES[storeId].apiPath(q),{headers:{'Accept':'application/json'},signal:controller.signal});
+    let fetchUrl;
+    if(store.viaServer){
+      if(!SERVER_URL) throw new Error('Servidor no configurado');
+      fetchUrl = SERVER_URL + store.apiPath(q);
+    } else {
+      fetchUrl = store.directUrl(q);
+    }
+    const res=await fetch(fetchUrl,{headers:{'Accept':'application/json'},signal:controller.signal});
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const json=await res.json();
-    return{items:STORES[storeId].parse(json).slice(0,12)};
+    if(json.error) throw new Error(json.error);
+    return{items:store.parse(json).slice(0,12)};
   }catch(e){
     if(e.name==='AbortError') throw new Error('Tiempo agotado (8s)');
     throw e;
@@ -308,8 +323,15 @@ async function fetchStore(storeId,q){
 }
 
 function parseUSAGS(json){
-  const p=json?.resources?.results?.products||[];
-  return p.map(p=>({name:p.title||'',url:p.url?'https://www.usagundamstore.com'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
+  // search.json returns {results: [...]} with different structure than suggest.json
+  const results = json?.results || json?.resources?.results?.products || [];
+  return results.map(p=>({
+    name: p.title||p.name||'',
+    url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
+    price: p.price ? `$${(parseFloat(p.price)/100).toFixed(2)}` : (p.variants?.[0]?.price ? `$${p.variants[0].price}` : ''),
+    priceNum: p.price ? parseFloat(p.price)/100 : 9999,
+    stock: p.available !== false && p.available_for_sale !== false ? 'En stock' : 'Sin stock'
+  })).filter(p=>p.name);
 }
 function parseNewtype(json){
   const p=json?.resources?.results?.products||[];
