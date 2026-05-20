@@ -318,6 +318,10 @@ async function go(q){
   const cn=fromCache?`<span class="cache-badge">⚡ cache</span>`:'';
   metaEl.innerHTML=`Resultados para <strong>"${esc(q)}"</strong> — ${total} producto${total!==1?'s':''} encontrado${total!==1?'s':''} ${cn}`;
   statusBar.classList.remove('vis'); tipBox.classList.add('vis');
+  // Show open-all bar
+  document.getElementById('openAllBar').style.display='flex';
+  // Auto-open USAGS and Newtype if checkbox is ticked
+  if(autoOpenChk.checked) openBothStores();
   busy=false; searchBtn.disabled=false; searchBtn.textContent='BUSCAR';
 }
 
