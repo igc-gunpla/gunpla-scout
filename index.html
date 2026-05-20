@@ -342,15 +342,39 @@ async function fetchStore(storeId,q){
 }
 
 function parseUSAGS(json){
-  // search.json returns {results: [...]} with different structure than suggest.json
-  const results = json?.results || json?.resources?.results?.products || [];
+
+  // Shopify AJAX Predictive Search
+  const results = json?.resources?.results?.products || [];
+
   return results.map(p=>({
-    name: p.title||p.name||'',
-    url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
-    price: p.price ? `$${(parseFloat(p.price)/100).toFixed(2)}` : (p.variants?.[0]?.price ? `$${p.variants[0].price}` : ''),
-    priceNum: p.price ? parseFloat(p.price)/100 : 9999,
-    stock: p.available !== false && p.available_for_sale !== false ? 'En stock' : 'Sin stock'
-  })).filter(p=>p.name);
+
+    name: p.title || p.name || '',
+
+    url: p.url
+      ? (p.url.startsWith('http')
+          ? p.url
+          : 'https://www.usagundamstore.com' + p.url)
+      : '',
+
+    price: p.price
+      ? `$${(parseFloat(p.price)/100).toFixed(2)}`
+      : (p.variants?.[0]?.price
+          ? `$${p.variants[0].price}`
+          : ''),
+
+    priceNum: p.price
+      ? parseFloat(p.price)/100
+      : (p.variants?.[0]?.price
+          ? parseFloat(p.variants[0].price)
+          : 9999),
+
+    stock:
+      p.available !== false &&
+      p.available_for_sale !== false
+        ? 'En stock'
+        : 'Sin stock'
+
+  })).filter(p => p.name);
 }
 function parseNewtype(json){
   const p=json?.resources?.results?.products||[];
