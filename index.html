@@ -199,17 +199,17 @@ if (SERVER_URL) {
 
 const STORES = {
   usags: {
-    apiPath: q => `/fetch?url=${enc('https://www.usagundamstore.com/search/suggest.json?q=' + enc(q) + '&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available')}`,
+    apiPath: q => `/search?store=usags&q=${enc(q)}`,
     search:  q => `https://www.usagundamstore.com/search?q=${enc(q)}&type=product`,
     parse: parseUSAGS
   },
   newtype: {
-    apiPath: q => `/fetch?url=${enc('https://newtype.us/search/suggest.json?q=' + enc(q) + '&resources[type]=product&resources[limit]=12&resources[fields]=title,variants.title,price,available')}`,
+    apiPath: q => `/search?store=newtype&q=${enc(q)}`,
     search:  q => `https://newtype.us/search?q=${enc(q)}`,
     parse: parseNewtype
   },
   gpros: {
-    apiPath: q => `/fetch?url=${enc('https://www.gundampros.shop/wp-json/wc/store/v1/products?search=' + enc(q) + '&per_page=12&status=publish')}`,
+    apiPath: q => `/search?store=gpros&q=${enc(q)}`,
     search:  q => `https://www.gundampros.shop/?s=${enc(q)}&post_type=product`,
     parse: parseGpros
   }
