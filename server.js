@@ -105,6 +105,13 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // DEBUG: log Newtype response structure
+      if (storeId === 'newtype') {
+        const preview = JSON.stringify(result.body).slice(0, 500);
+        console.log(`[Newtype] keys: ${Object.keys(result.body || {}).join(', ')}`);
+        console.log(`[Newtype] preview: ${preview}`);
+      }
+
       cache.set(cacheKey, result.body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result.body));
