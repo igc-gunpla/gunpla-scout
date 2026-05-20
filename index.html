@@ -356,14 +356,14 @@ function parseUSAGS(json){
           : 'https://www.usagundamstore.com' + p.url)
       : '',
 
-    price: p.price
-      ? `$${(parseFloat(p.price)/100).toFixed(2)}`
+    price: p.price_min
+      ? `$${(parseFloat(p.price_min)/100).toFixed(2)}`
       : (p.variants?.[0]?.price
-          ? `$${p.variants[0].price}`
+          ? `$${parseFloat(p.variants[0].price).toFixed(2)}`
           : ''),
 
-    priceNum: p.price
-      ? parseFloat(p.price)/100
+    priceNum: p.price_min
+      ? parseFloat(p.price_min)/100
       : (p.variants?.[0]?.price
           ? parseFloat(p.variants[0].price)
           : 9999),
