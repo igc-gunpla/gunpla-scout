@@ -356,17 +356,22 @@ function parseUSAGS(json){
           : 'https://www.usagundamstore.com' + p.url)
       : '',
 
+    // USAGS predictive search already returns normal dollar values
     price: p.price_min
-      ? `$${(parseFloat(p.price_min)/100).toFixed(2)}`
-      : (p.variants?.[0]?.price
-          ? `$${parseFloat(p.variants[0].price).toFixed(2)}`
-          : ''),
+      ? `$${parseFloat(p.price_min).toFixed(2)}`
+      : (p.price
+          ? `$${parseFloat(p.price).toFixed(2)}`
+          : (p.variants?.[0]?.price
+              ? `$${parseFloat(p.variants[0].price).toFixed(2)}`
+              : '')),
 
     priceNum: p.price_min
-      ? parseFloat(p.price_min)/100
-      : (p.variants?.[0]?.price
-          ? parseFloat(p.variants[0].price)
-          : 9999),
+      ? parseFloat(p.price_min)
+      : (p.price
+          ? parseFloat(p.price)
+          : (p.variants?.[0]?.price
+              ? parseFloat(p.variants[0].price)
+              : 9999)),
 
     stock:
       p.available !== false &&
