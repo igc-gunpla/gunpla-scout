@@ -97,6 +97,8 @@
   #configBanner b{color:#fff}
   #configBanner a{color:var(--accent);text-decoration:underline}
   #configBanner.hidden{display:none}
+  .open-all-btn{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Orbitron',monospace;font-weight:600;letter-spacing:.5px;transition:all .15s}
+  .open-all-btn:hover{filter:brightness(1.2);transform:translateY(-1px)}
 </style>
 </head>
 <body>
@@ -138,6 +140,12 @@
         <option value="none">Sin ordenar</option>
       </select>
     </div>
+    <div class="sort-row" style="margin-top:10px;gap:10px">
+      <label class="auto-open-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--muted);font-size:12px">
+        <input type="checkbox" id="autoOpenChk" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer"/>
+        <span>Abrir USAGS y Newtype automáticamente al buscar</span>
+      </label>
+    </div>
   </div>
 
   <div class="tip-box" id="tipBox">
@@ -148,6 +156,20 @@
 
   <div id="resultsArea">
     <div class="meta" id="meta"></div>
+
+    <!-- open-all bar — shown after search -->
+    <div id="openAllBar" style="display:none;justify-content:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <button onclick="openStore('usags')" class="open-all-btn" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.35);color:#f97316">
+        Abrir USAGS ↗
+      </button>
+      <button onclick="openStore('newtype')" class="open-all-btn" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22d3ee">
+        Abrir Newtype ↗
+      </button>
+      <button onclick="openBothStores()" class="open-all-btn" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#3b82f6;font-weight:700">
+        ⚡ Abrir ambas tiendas
+      </button>
+    </div>
+
     <div class="grid">
       <div class="scol scol-usags" id="col-usags">
         <div class="scol-head"><span class="scol-name">USA Gundam Store</span><span class="scol-cnt" id="cnt-usags"></span></div>
@@ -377,6 +399,24 @@ function sClass(s){if(!s)return 's-in';const l=s.toLowerCase();if(l.includes('si
 function sLabel(s){if(!s)return 'En stock';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 'Sin stock';if(l.includes('pre')||l.includes('back'))return 'Pre-order';return 'En stock';}
 function enc(s){return encodeURIComponent(s);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── AUTO-OPEN & OPEN HELPERS ──────────────────────────────────────────────────
+const autoOpenChk = document.getElementById('autoOpenChk');
+autoOpenChk.checked = localStorage.getItem('gsAutoOpen') === '1';
+autoOpenChk.addEventListener('change', () => {
+  localStorage.setItem('gsAutoOpen', autoOpenChk.checked ? '1' : '0');
+});
+
+function openStore(storeId) {
+  const url = STORES[storeId].search(lastQ);
+  if (url && url !== '#') window.open(url, '_blank');
+}
+
+function openBothStores() {
+  openStore('usags');
+  setTimeout(() => openStore('newtype'), 200); // slight delay to avoid popup blocker
+}
+
 </script>
 </body>
 </html>
