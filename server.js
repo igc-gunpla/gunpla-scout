@@ -47,104 +47,117 @@ async function fetchUrl(targetUrl, timeout = 20000) {
 }
 
 // ── USAGS HTML PARSER ─────────────────────────────────────────────────────────
-// Detects class="flag preorder" or class="related-stock preorder"
+// USAGS Shopify search page structure:
+// - Links: href="/products/slug" class="full-unstyled-link"
+// - Name: in card__heading > a tag after the image block  
+// - Price: collected separately in order like Newtype
+// - Stock: class="badge--sold-out" or class="flag preorder"
 function parseUSAGSHTML(html) {
   const items = [];
   const seen = new Set();
 
-  // Shopify search: products are in grid items with /products/ links
-  // Split by product card boundaries
-  const cardRegex = /href="(\/products\/([^"?#]+))"[^>]*>/g;
+  // 1. Collect all product slugs in order (skip duplicates)
+  const linkRegex = /href="(\/products\/([^"?#\/]+))"/g;
+  const matches = [];
   let match;
-
-  while ((match = cardRegex.exec(html)) !== null) {
+  while ((match = linkRegex.exec(html)) !== null) {
     const path = match[1];
     const slug = match[2];
-    if (seen.has(path)) continue;
-    seen.add(path);
+    // Skip non-product links (collections, pages, etc)
+    if (slug.includes('.') || slug.length < 3) continue;
+    if (!seen.has(path)) {
+      seen.add(path);
+      matches.push({ path, slug, index: match.index });
+    }
+  }
 
+  // 2. Collect all prices in order: $XX.XX patterns in product cards
+  // Shopify uses class="price-item" or data-price
+  const priceRegex = /class="price-item[^"]*"[^>]*>\s*\$([\d,]+\.?\d*)/g;
+  const prices = [];
+  let pm;
+  while ((pm = priceRegex.exec(html)) !== null) prices.push(`$${pm[1]}`);
+
+  // Fallback: money spans
+  if (!prices.length) {
+    const moneyRegex = /<span class="money">\$([\d,]+\.?\d*)<\/span>/g;
+    while ((pm = moneyRegex.exec(html)) !== null) prices.push(`$${pm[1]}`);
+  }
+
+  // 3. Stock: collect badge/flag classes in order
+  const stocks = [];
+  // sold out badges
+  const soldRegex = /class="[^"]*badge[^"]*"[^>]*>([^<]+)</g;
+  let sm;
+  while ((sm = soldRegex.exec(html)) !== null) {
+    const txt = sm[1].trim().toLowerCase();
+    if (txt.includes('sold out') || txt.includes('unavailable')) stocks.push('Sin stock');
+    else if (txt.includes('pre') || txt.includes('coming soon')) stocks.push('Pre-order');
+    else if (txt.includes('sale') || txt.includes('new')) continue; // skip non-stock badges
+    else stocks.push('En stock');
+  }
+
+  for (let i = 0; i < matches.length && items.length < 12; i++) {
+    const { path, slug } = matches[i];
     const fullUrl = 'https://www.usagundamstore.com' + path;
-    const block = html.slice(Math.max(0, match.index - 200), match.index + 2000);
-
-    // Name: look for heading text near the link
-    let name = '';
-    const nameMatch = block.match(/class="[^"]*(?:card__heading|product[_-]title|product[_-]name|full-unstyled-link)[^"]*"[^>]*>(?:<[^>]+>)*([^<]{3,120})/i);
-    if (nameMatch) {
-      name = nameMatch[1].trim();
-    } else {
-      // Fallback: use slug
-      name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    }
-    if (!name || name.length < 3) continue;
-
-    // Price
-    const priceMatch = block.match(/\$[\d,]+\.?\d*/);
-    const price = priceMatch ? priceMatch[0] : '';
-
-    // Stock — detect preorder class first, then sold out
-    const blockLower = block.toLowerCase();
-    let stock = 'En stock';
-    if (blockLower.includes('flag preorder') || blockLower.includes('related-stock preorder') ||
-        blockLower.includes('preorder') || blockLower.includes('pre-order')) {
-      stock = 'Pre-order';
-    } else if (blockLower.includes('sold-out') || blockLower.includes('sold_out') ||
-               blockLower.includes('out-of-stock') || blockLower.includes('"sold out"') ||
-               blockLower.includes('>sold out<') || blockLower.includes('badge--sold')) {
-      stock = 'Sin stock';
-    }
-
+    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const price = prices[i] || '';
+    const stock = stocks[i] || 'En stock';
     items.push({ name, url: fullUrl, price, stock });
-    if (items.length >= 12) break;
   }
 
   return items;
 }
 
 // ── GPROS HTML PARSER ─────────────────────────────────────────────────────────
-// WooCommerce — detects class="onsale on-preorder" and outofstock
+// WooCommerce search page structure:
+// - Cards: li.product or li[class*="product"]
+// - Name: .woocommerce-loop-product__title
+// - Price: .price .amount (inside each card)
+// - Stock: li.outofstock class, or span.onsale with on-preorder
 function parseGPROSHTML(html) {
   const items = [];
-  const seen = new Set();
 
-  // WooCommerce product cards: li.product with /product/ links
-  const cardRegex = /href="(https?:\/\/www\.gundampros\.shop\/product\/([^"?#\/]+)\/?)"[^>]*>/g;
-  let match;
+  // Split HTML into product card blocks using WooCommerce li.product boundaries
+  // Each card starts at <li class="...product..."
+  const cardSplitRegex = /<li[^>]+class="[^"]*(?:type-product|product-type)[^"]*"[^>]*>/g;
+  const cardStarts = [];
+  let cm;
+  while ((cm = cardSplitRegex.exec(html)) !== null) {
+    cardStarts.push(cm.index);
+  }
 
-  while ((match = cardRegex.exec(html)) !== null) {
-    const fullUrl = match[1];
-    const slug = match[2];
-    if (seen.has(fullUrl)) continue;
-    seen.add(fullUrl);
+  for (let i = 0; i < cardStarts.length && items.length < 12; i++) {
+    const start = cardStarts[i];
+    const end = cardStarts[i + 1] || start + 3000;
+    const card = html.slice(start, end);
+    const cardLower = card.toLowerCase();
 
-    const block = html.slice(Math.max(0, match.index - 500), match.index + 2000);
-    const blockLower = block.toLowerCase();
+    // URL and slug
+    const urlMatch = card.match(/href="(https?:\/\/www\.gundampros\.shop\/product\/([^"?#\/]+)\/?)"/)
+    if (!urlMatch) continue;
+    const fullUrl = urlMatch[1];
+    const slug = urlMatch[2];
 
     // Name
     let name = '';
-    const nameMatch = block.match(/class="[^"]*woocommerce-loop-product__title[^"]*"[^>]*>([^<]{3,120})/i);
-    if (nameMatch) {
-      name = nameMatch[1].trim();
-    } else {
-      name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    }
+    const nameMatch = card.match(/class="[^"]*woocommerce-loop-product__title[^"]*"[^>]*>([^<]{3,120})/i);
+    name = nameMatch ? nameMatch[1].trim() : slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     if (!name || name.length < 3) continue;
 
-    // Price
-    const priceMatch = block.match(/\$[\d,]+\.?\d*/);
-    const price = priceMatch ? priceMatch[0] : '';
+    // Price — look for .amount span inside .price
+    const priceMatch = card.match(/<span class="[^"]*amount[^"]*"[^>]*>\$([\d,]+\.?\d*)<\/span>/);
+    const price = priceMatch ? `$${priceMatch[1]}` : '';
 
-    // Stock — check preorder class first
+    // Stock
     let stock = 'En stock';
-    if (blockLower.includes('on-preorder') || blockLower.includes('preorder now') ||
-        blockLower.includes('pre-order now') || blockLower.includes('class="onsale on-preorder"')) {
+    if (cardLower.includes('on-preorder') || cardLower.includes('preorder now') || cardLower.includes('pre-order now')) {
       stock = 'Pre-order';
-    } else if (blockLower.includes('outofstock') || blockLower.includes('out-of-stock') ||
-               blockLower.includes('out of stock')) {
+    } else if (card.includes('outofstock') || cardLower.includes('out of stock')) {
       stock = 'Sin stock';
     }
 
     items.push({ name, url: fullUrl, price, stock });
-    if (items.length >= 12) break;
   }
 
   return items;
