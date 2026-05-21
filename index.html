@@ -338,7 +338,7 @@ async function fetchStore(storeId,q){
     if(json.error) throw new Error(json.error);
     return{items:store.parse(json).slice(0,12)};
   }catch(e){
-    if(e.name==='AbortError') throw new Error('Tiempo agotado (8s)');
+    if(e.name==='AbortError') throw new Error(`Tiempo agotado (${storeId==='newtype'?'25s':'8s'})`);
     throw e;
   }finally{ clearTimeout(timer); }
 }

@@ -94,6 +94,13 @@ function parseNewtypeHTML(html) {
       stock = '< 10 unid.';
     }
 
+    // Debug price on first item only
+    if (items.length === 0) {
+      const priceArea = block.slice(0, 800);
+      const dollarIdx = priceArea.indexOf('$');
+      if (dollarIdx > -1) console.log(`[Newtype] Price area: ${priceArea.slice(Math.max(0,dollarIdx-30), dollarIdx+80).replace(/\n/g,' ')}`);
+      else console.log('[Newtype] No $ found in first block');
+    }
     items.push({ name, url: fullUrl, price, stock });
     if (items.length >= 12) break;
   }
