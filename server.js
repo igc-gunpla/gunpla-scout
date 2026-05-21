@@ -265,20 +265,21 @@ const server = http.createServer(async (req, res) => {
       let items = [];
       if (storeId === 'usags') {
         items = parseUSAGSHTML(html);
-        const pLinks = (html.match(/href="\/products\//g)||[]).length;
-        const dollar = html.indexOf('$');
-        console.log(`[USAGS] /products/ links: ${pLinks}, first $ at: ${dollar}`);
-        if (dollar > -1) console.log(`[USAGS] price context: ${html.slice(Math.max(0,dollar-40),dollar+80).replace(/\n/g,' ')}`);
+        // Find first /products/ link and show 800 chars of context
+        const pidx = html.indexOf('href="/products/');
+        if (pidx > -1) console.log(`[USAGS] first product block: ${html.slice(pidx, pidx+800).replace(/\n/g,' ')}`);
+        // Find price after position 5000 (skip head section)
+        const bodyHtml = html.slice(5000);
+        const d2 = bodyHtml.indexOf('$');
+        if (d2 > -1) console.log(`[USAGS] first body $: ${bodyHtml.slice(Math.max(0,d2-30),d2+100).replace(/\n/g,' ')}`);
         console.log(`[USAGS] items found: ${items.length}`);
       }
       if (storeId === 'newtype') items = parseNewtypeHTML(html);
       if (storeId === 'gpros') {
         items = parseGPROSHTML(html);
-        const pLinks = (html.match(/\/product\//g)||[]).length;
-        const dollar = html.indexOf('$');
-        console.log(`[GPROS] /product/ links: ${pLinks}, first $ at: ${dollar}`);
-        if (dollar > -1) console.log(`[GPROS] price context: ${html.slice(Math.max(0,dollar-40),dollar+80).replace(/\n/g,' ')}`);
-        console.log(`[GPROS] items found: ${items.length}`);
+        const pidx2 = html.indexOf('/product/');
+        if (pidx2 > -1) console.log(`[GPROS] first product block: ${html.slice(Math.max(0,pidx2-200), pidx2+800).replace(/\n/g,' ')}`);
+        console.log(`[GPROS] items found: ${items.length}, first: ${JSON.stringify(items[0]||{})}`);
       }
 
       const data = { items };
