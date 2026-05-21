@@ -44,55 +44,52 @@ async function fetchUrl(targetUrl) {
 }
 
 // ── NEWTYPE HTML PARSER ───────────────────────────────────────────────────────
+// Newtype URL format: href="/p/PRODUCTID/h/product-slug"
+// Price format: $<!-- -->19.99  (React comment inside span)
+// Name: inside <a href="/p/...">Product Name</a>
 function parseNewtypeHTML(html) {
   const items = [];
-
-  // Extract product cards — Newtype uses Shopify so product links follow /products/ pattern
-  // Match product blocks using regex on the HTML string
-  
-  // Strategy 1: Find all product URLs and titles from anchor tags
-  const productLinkRegex = /href="(\/products\/[^"?#]+)"[^>]*>([^<]{3,120})/g;
   const seen = new Set();
+
+  // Match product links: /p/ID/h/slug
+  const linkRegex = /href="(\/p\/[^"]+\/h\/[^"]+)"/g;
   let match;
 
-  while ((match = productLinkRegex.exec(html)) !== null) {
+  while ((match = linkRegex.exec(html)) !== null) {
     const path = match[1];
-    const text = match[2].trim().replace(/\s+/g, ' ');
-    if (text.length < 3 || seen.has(path)) continue;
+    if (seen.has(path)) continue;
     seen.add(path);
 
     const fullUrl = 'https://newtype.us' + path;
 
-    // Look for price near this match position
-    const surrounding = html.slice(Math.max(0, match.index - 500), match.index + 500);
-    const priceMatch = surrounding.match(/\$[\d,]+\.?\d*/);
-    const price = priceMatch ? priceMatch[0] : '';
+    // Get surrounding HTML block (~800 chars after the href)
+    const block = html.slice(match.index, match.index + 800);
 
-    // Look for stock indicators
-    const surroundLower = surrounding.toLowerCase();
+    // Extract name: text content of the anchor tag
+    const nameMatch = block.match(/data-discover="true">([^<]{3,120})</);
+    const name = nameMatch ? nameMatch[1].trim() : '';
+    if (!name || name.length < 3) continue;
+
+    // Extract price: $<!-- -->XX.XX pattern (React inserts HTML comment)
+    const priceMatch = block.match(/\$(?:<!--.*?-->)?([\d,]+\.?\d*)/);
+    const price = priceMatch ? `$${priceMatch[1]}` : '';
+
+    // Stock detection
+    const blockLower = block.toLowerCase();
     let stock = 'En stock';
-    if (surroundLower.includes('sold out') || surroundLower.includes('out of stock')) {
+    if (blockLower.includes('sold out') || blockLower.includes('out of stock')) {
       stock = 'Sin stock';
-    } else if (surroundLower.includes('pre-order') || surroundLower.includes('coming soon')) {
+    } else if (blockLower.includes('pre-order') || blockLower.includes('coming soon')) {
       stock = 'Pre-order';
-    } else if (surroundLower.includes('< 10') || surroundLower.includes('low stock')) {
+    } else if (blockLower.includes('< 10') || blockLower.includes('low stock')) {
       stock = '< 10 unid.';
     }
 
-    items.push({ name: text, url: fullUrl, price, stock });
+    items.push({ name, url: fullUrl, price, stock });
+    if (items.length >= 12) break;
   }
 
-  // Deduplicate by URL keeping first occurrence
-  const unique = [];
-  const urlsSeen = new Set();
-  for (const item of items) {
-    if (!urlsSeen.has(item.url) && item.name.length > 3) {
-      urlsSeen.add(item.url);
-      unique.push(item);
-    }
-  }
-
-  return unique.slice(0, 12);
+  return items;
 }
 
 // ── SERVER ────────────────────────────────────────────────────────────────────
@@ -161,16 +158,6 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify(errData));
           return;
         }
-
-        // Log product-related snippets to understand structure
-        const pIdx = html.indexOf('/p/');
-        const prodIdx = html.indexOf('/products/');
-        const cardIdx = html.toLowerCase().indexOf('product-card');
-        const priceIdx = html.indexOf('$');
-        console.log(`[Newtype] /p/ at: ${pIdx}, /products/ at: ${prodIdx}, product-card at: ${cardIdx}, first $ at: ${priceIdx}`);
-        if (pIdx > -1) console.log(`[Newtype] /p/ context: ${html.slice(Math.max(0,pIdx-100), pIdx+200).replace(/\n/g,' ')}`);
-        if (prodIdx > -1) console.log(`[Newtype] /products/ context: ${html.slice(Math.max(0,prodIdx-100), prodIdx+200).replace(/\n/g,' ')}`);
-        if (priceIdx > -1) console.log(`[Newtype] price context: ${html.slice(Math.max(0,priceIdx-150), priceIdx+100).replace(/\n/g,' ')}`);
 
         const items = parseNewtypeHTML(html);
         console.log(`[Newtype] Items found: ${items.length}`);
