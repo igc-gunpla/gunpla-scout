@@ -17,7 +17,7 @@ function buildApiUrl(storeId, query) {
     case 'newtype':
       // Scrape search results page via ScraperAPI (suggest.json returns HTML, not JSON)
       const newtypeSearch = `https://newtype.us/search?q=${q}&type=product`;
-      return `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(newtypeSearch)}&country_code=us&render=false`;
+      return `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(newtypeSearch)}&country_code=us&render=true`;
     case 'gpros':
       return `https://www.gundampros.shop/wp-json/wc/store/v1/products?search=${q}&per_page=12&status=publish`;
     default:
@@ -35,7 +35,7 @@ async function fetchUrl(targetUrl) {
       'Cache-Control': 'no-cache',
       'Referer': 'https://www.google.com/'
     },
-    timeout: 20000,
+    timeout: 30000,
     maxRedirects: 5,
     validateStatus: () => true,
     responseType: 'text'
@@ -148,9 +148,16 @@ const server = http.createServer(async (req, res) => {
         const html = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
 
         console.log(`[Newtype] HTML length: ${html.length}`);
-        // Log a section from the middle where products should be
-        const mid = Math.floor(html.length / 3);
-        console.log(`[Newtype] Mid sample: ${html.slice(mid, mid+600).replace(/\n/g,' ')}`);
+        // Look for /p/ links to confirm products loaded
+        const pCount = (html.match(/href="\/p\//g) || []).length;
+        console.log(`[Newtype] Product links found: ${pCount}`);
+        if (pCount > 0) {
+          const pIdx = html.indexOf('href="/p/');
+          console.log(`[Newtype] First product: ${html.slice(pIdx, pIdx+300).replace(/\n/g,' ')}`);
+        } else {
+          const mid = Math.floor(html.length / 2);
+          console.log(`[Newtype] Mid sample (no products): ${html.slice(mid, mid+400).replace(/\n/g,' ')}`);
+        }
 
         // Check if Cloudflare blocked us
         if (html.includes('cf-challenge') || html.includes('Attention Required') || html.includes('Just a moment')) {
