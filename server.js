@@ -150,8 +150,12 @@ const server = http.createServer(async (req, res) => {
       if (storeId === 'newtype') {
         const html = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
 
+        console.log(`[Newtype] HTML length: ${html.length}`);
+        console.log(`[Newtype] First 300 chars: ${html.slice(0, 300).replace(/\n/g, ' ')}`);
+
         // Check if Cloudflare blocked us
         if (html.includes('cf-challenge') || html.includes('Attention Required') || html.includes('Just a moment')) {
+          console.log('[Newtype] BLOCKED by Cloudflare');
           const errData = { error: 'Cloudflare block — intentar más tarde' };
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(errData));
@@ -159,6 +163,9 @@ const server = http.createServer(async (req, res) => {
         }
 
         const items = parseNewtypeHTML(html);
+        console.log(`[Newtype] Items found: ${items.length}`);
+        if (items.length > 0) console.log(`[Newtype] First item: ${JSON.stringify(items[0])}`);
+
         const data = { items };
         cache.set(cacheKey, data);
         res.writeHead(200, { 'Content-Type': 'application/json' });
