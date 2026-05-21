@@ -44,13 +44,14 @@ async function fetchUrl(targetUrl) {
 }
 
 // ── NEWTYPE HTML PARSER ───────────────────────────────────────────────────────
-// Newtype URL format: href="/p/PRODUCTID/h/product-slug"
-// Price format: $<!-- -->19.99 or $19.99
+// Newtype structure: product links are at the top of the HTML,
+// prices and stock tags appear later in a separate section in the same order.
+// Format: <span>$81</span> and <div class="stock-tag bg-green ...">In stock</div>
 function parseNewtypeHTML(html) {
   const items = [];
   const seen = new Set();
 
-  // Collect all product link positions first
+  // 1. Collect all product links in order
   const linkRegex = /href="(\/p\/[^\/]+\/h\/([^"]+))"/g;
   const matches = [];
   let match;
@@ -62,54 +63,42 @@ function parseNewtypeHTML(html) {
       matches.push({ path, slug, index: match.index });
     }
   }
+  if (!matches.length) return items;
 
+  // 2. Collect all prices in order: <span>$XX</span> or <span>$XX.XX</span>
+  const priceRegex = /<span>\$(\d[\d,]*(?:\.\d{1,2})?)<\/span>/g;
+  const prices = [];
+  let pm;
+  while ((pm = priceRegex.exec(html)) !== null) {
+    prices.push(`$${pm[1]}`);
+  }
+
+  // 3. Collect all stock tags in order: stock-tag bg-green = in stock, bg-red/gray = out
+  const stockRegex = /stock-tag[^"]*"[^>]*>([^<]+)</g;
+  const stocks = [];
+  let sm;
+  while ((sm = stockRegex.exec(html)) !== null) {
+    const txt = sm[1].trim().toLowerCase();
+    if (txt.includes('in stock') || txt.includes('available')) stocks.push('En stock');
+    else if (txt.includes('out') || txt.includes('sold')) stocks.push('Sin stock');
+    else if (txt.includes('pre') || txt.includes('coming')) stocks.push('Pre-order');
+    else if (txt.includes('< 10') || txt.includes('low')) stocks.push('< 10 unid.');
+    else stocks.push('En stock');
+  }
+
+  console.log(`[Newtype] prices found: ${prices.length}, stocks found: ${stocks.length}, products: ${matches.length}`);
+
+  // 4. Associate by index order
   for (let i = 0; i < matches.length && items.length < 12; i++) {
-    const { path, slug, index } = matches[i];
+    const { path, slug } = matches[i];
     const fullUrl = 'https://newtype.us' + path;
 
-    // Block spans from this product to the next (or 3000 chars max)
-    const nextIndex = matches[i + 1] ? matches[i + 1].index : index + 3000;
-    const block = html.slice(index, Math.min(nextIndex, index + 3000));
-
-    // Extract name
-    let nameMatch = block.match(/data-discover="true">([^<]{3,120})</);
-    if (!nameMatch) nameMatch = block.match(/class="[^"]*title[^"]*"[^>]*>([^<]{3,120})</i);
-    const name = nameMatch
-      ? nameMatch[1].trim()
-      : slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    // Name from slug
+    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     if (!name || name.length < 3) continue;
 
-    // Extract price — search whole block
-    const priceMatch = block.match(/\$(?:<!--[^-]*-->)?(\d[\d,]*\.\d{2})/);
-    const price = priceMatch ? `$${priceMatch[1]}` : '';
-
-    // Debug first item price
-    if (items.length === 0) {
-      const dIdx = block.indexOf('$');
-      if (dIdx > -1) {
-        console.log(`[Newtype] $ found at pos ${dIdx}/${block.length}: ${block.slice(Math.max(0,dIdx-30), dIdx+80).replace(/\n/g,' ')}`);
-      } else {
-        // Find first $ in entire HTML and show context
-        const globalDIdx = html.indexOf('$');
-        if (globalDIdx > -1) {
-          console.log(`[Newtype] First $ in full HTML at pos ${globalDIdx}/${html.length}: ${html.slice(Math.max(0,globalDIdx-50), globalDIdx+150).replace(/\n/g,' ')}`);
-          // Also show 2nd and 3rd occurrence
-          const d2 = html.indexOf('$', globalDIdx+1);
-          const d3 = html.indexOf('$', d2+1);
-          if (d2>-1) console.log(`[Newtype] 2nd $: ${html.slice(Math.max(0,d2-30), d2+100).replace(/\n/g,' ')}`);
-          if (d3>-1) console.log(`[Newtype] 3rd $: ${html.slice(Math.max(0,d3-30), d3+100).replace(/\n/g,' ')}`);
-        } else {
-          console.log('[Newtype] No $ found anywhere in HTML');
-        }
-      }
-    }
-
-    // Stock detection
-    const blockLower = block.toLowerCase();
-    let stock = 'En stock';
-    if (blockLower.includes('sold out') || blockLower.includes('out of stock')) stock = 'Sin stock';
-    else if (blockLower.includes('pre-order') || blockLower.includes('coming soon')) stock = 'Pre-order';
-    else if (blockLower.includes('< 10') || blockLower.includes('low stock')) stock = '< 10 unid.';
+    const price = prices[i] || '';
+    const stock = stocks[i] || 'En stock';
 
     items.push({ name, url: fullUrl, price, stock });
   }
