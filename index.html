@@ -194,6 +194,7 @@
 const CACHE_TTL  = 5 * 60 * 1000;
 const DEBOUNCE   = 500;
 const TIMEOUT_MS = 8000;
+const TIMEOUT_NEWTYPE = 25000; // Newtype needs JS rendering via ScraperAPI
 
 // ── SERVER URL — set by user after Render deploy ──────────────────────────────
 let SERVER_URL = localStorage.getItem('gsServerUrl') || '';
@@ -321,7 +322,8 @@ async function go(q){
 async function fetchStore(storeId,q){
   const store = STORES[storeId];
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
+  const timeout = storeId === 'newtype' ? TIMEOUT_NEWTYPE : TIMEOUT_MS;
+  const timer=setTimeout(()=>controller.abort(), timeout);
   try{
     let fetchUrl;
     if(store.viaServer){

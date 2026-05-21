@@ -45,33 +45,42 @@ async function fetchUrl(targetUrl) {
 
 // ── NEWTYPE HTML PARSER ───────────────────────────────────────────────────────
 // Newtype URL format: href="/p/PRODUCTID/h/product-slug"
-// Price format: $<!-- -->19.99  (React comment inside span)
-// Name: inside <a href="/p/...">Product Name</a>
+// Price format: $<!-- -->19.99 or $19.99
 function parseNewtypeHTML(html) {
   const items = [];
   const seen = new Set();
 
   // Match product links: /p/ID/h/slug
-  const linkRegex = /href="(\/p\/[^"]+\/h\/[^"]+)"/g;
+  const linkRegex = /href="(\/p\/[^\/]+\/h\/([^"]+))"/g;
   let match;
 
   while ((match = linkRegex.exec(html)) !== null) {
-    const path = match[1];
+    const path  = match[1];
+    const slug  = match[2]; // e.g. "mg-gn-003-gundam-kyrios"
     if (seen.has(path)) continue;
     seen.add(path);
 
     const fullUrl = 'https://newtype.us' + path;
 
-    // Get surrounding HTML block (~800 chars after the href)
-    const block = html.slice(match.index, match.index + 800);
+    // Get surrounding block (1200 chars) to find name and price
+    const block = html.slice(match.index, match.index + 1200);
 
-    // Extract name: text content of the anchor tag
-    const nameMatch = block.match(/data-discover="true">([^<]{3,120})</);
-    const name = nameMatch ? nameMatch[1].trim() : '';
+    // Try to extract text name from anchor or nearby tag
+    // Pattern 1: text directly after data-discover="true">
+    let nameMatch = block.match(/data-discover="true">([^<]{3,120})</);
+    // Pattern 2: any text-heavy tag near the link
+    if (!nameMatch) nameMatch = block.match(/class="[^"]*title[^"]*"[^>]*>([^<]{3,120})</i);
+    if (!nameMatch) nameMatch = block.match(/class="[^"]*name[^"]*"[^>]*>([^<]{3,120})</i);
+
+    // Fallback: build name from slug (mg-gn-003-gundam-kyrios → MG GN-003 Gundam Kyrios)
+    let name = nameMatch
+      ? nameMatch[1].trim()
+      : slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
     if (!name || name.length < 3) continue;
 
-    // Extract price: $<!-- -->XX.XX pattern (React inserts HTML comment)
-    const priceMatch = block.match(/\$(?:<!--.*?-->)?([\d,]+\.?\d*)/);
+    // Extract price — handles $19.99 and $<!-- -->19.99
+    const priceMatch = block.match(/\$(?:<!--[^>]*-->)?(\d[\d,]*\.?\d*)/);
     const price = priceMatch ? `$${priceMatch[1]}` : '';
 
     // Stock detection
