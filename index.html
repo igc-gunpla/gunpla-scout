@@ -382,7 +382,18 @@ function parseUSAGS(json){
   })).filter(p => p.name);
 }
 function parseNewtype(json){
-  const p=json?.resources?.results?.products||[];
+  // Server now returns {items: [...]} from HTML scraping
+  if (json?.items) {
+    return json.items.map(p => ({
+      name: p.name || '',
+      url: p.url || '',
+      price: p.price || '',
+      priceNum: p.price ? parseFloat(p.price.replace(/[^0-9.]/g,'')) || 9999 : 9999,
+      stock: p.stock || 'En stock'
+    })).filter(p => p.name);
+  }
+  // Fallback: old Shopify suggest.json format
+  const p = json?.resources?.results?.products || [];
   return p.map(p=>({name:p.title||'',url:p.url?'https://newtype.us'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
 }
 function parseGpros(json){
