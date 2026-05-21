@@ -162,6 +162,16 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
+        // Log product-related snippets to understand structure
+        const pIdx = html.indexOf('/p/');
+        const prodIdx = html.indexOf('/products/');
+        const cardIdx = html.toLowerCase().indexOf('product-card');
+        const priceIdx = html.indexOf('$');
+        console.log(`[Newtype] /p/ at: ${pIdx}, /products/ at: ${prodIdx}, product-card at: ${cardIdx}, first $ at: ${priceIdx}`);
+        if (pIdx > -1) console.log(`[Newtype] /p/ context: ${html.slice(Math.max(0,pIdx-100), pIdx+200).replace(/\n/g,' ')}`);
+        if (prodIdx > -1) console.log(`[Newtype] /products/ context: ${html.slice(Math.max(0,prodIdx-100), prodIdx+200).replace(/\n/g,' ')}`);
+        if (priceIdx > -1) console.log(`[Newtype] price context: ${html.slice(Math.max(0,priceIdx-150), priceIdx+100).replace(/\n/g,' ')}`);
+
         const items = parseNewtypeHTML(html);
         console.log(`[Newtype] Items found: ${items.length}`);
         if (items.length > 0) console.log(`[Newtype] First item: ${JSON.stringify(items[0])}`);
