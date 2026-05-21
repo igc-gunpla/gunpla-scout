@@ -344,21 +344,28 @@ async function fetchStore(storeId,q){
 }
 
 function parseUSAGS(json){
-  if (json?.items) {
-    return json.items.map(p=>({
-      name: p.name||'', url: p.url||'', price: p.price||'',
-      priceNum: p.price ? parseFloat(p.price.replace(/[^0-9.]/g,''))||9999 : 9999,
-      stock: p.stock||'En stock'
-    })).filter(p=>p.name);
-  }
-  const results = json?.resources?.results?.products || [];
-  return results.map(p=>({
-    name: p.title||p.name||'',
-    url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
-    price: p.price_min ? `$${parseFloat(p.price_min).toFixed(2)}` : '',
-    priceNum: p.price_min ? parseFloat(p.price_min) : 9999,
-    stock: p.available_for_sale===false ? 'Sin stock' : 'En stock'
-  })).filter(p=>p.name);
+  // Shopify suggest.json → resources.results.products
+  const prods = json?.resources?.results?.products || [];
+  return prods.map(p=>{
+    // Price — suggest.json returns price_min in cents
+    const priceNum = p.price_min ? parseFloat(p.price_min) : (p.price ? parseFloat(p.price) : 9999);
+    const price = priceNum < 9999 ? `$${priceNum.toFixed(2)}` : '';
+    // Pre-order: USAGS adds tag 'preorder' or availability false but still published
+    const tags = (p.tags || []).join(' ').toLowerCase();
+    const title = (p.title||'').toLowerCase();
+    let stock = 'En stock';
+    if (tags.includes('preorder') || tags.includes('pre-order') || tags.includes('pre order') ||
+        title.includes('preorder') || title.includes('pre-order')) {
+      stock = 'Pre-order';
+    } else if (p.available_for_sale === false) {
+      stock = 'Sin stock';
+    }
+    return {
+      name: p.title||'',
+      url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
+      price, priceNum, stock
+    };
+  }).filter(p=>p.name);
 }
 function parseNewtype(json){
   // Server now returns {items: [...]} from HTML scraping
@@ -376,19 +383,33 @@ function parseNewtype(json){
   return p.map(p=>({name:p.title||'',url:p.url?'https://newtype.us'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
 }
 function parseGpros(json){
-  if (json?.items) {
-    return json.items.map(p=>({
-      name: p.name||'', url: p.url||'', price: p.price||'',
-      priceNum: p.price ? parseFloat(p.price.replace(/[^0-9.]/g,''))||9999 : 9999,
-      stock: p.stock||'En stock'
-    })).filter(p=>p.name);
-  }
-  const prods=Array.isArray(json)?json:(json?.products||[]);
+  // WooCommerce Store API
+  const prods = Array.isArray(json) ? json : (json?.products || []);
   return prods.map(p=>{
-    const inStock=p.is_in_stock!==false&&p.stock_status!=='outofstock';
-    const pr=p.prices?.price?parseInt(p.prices.price)/100:null;
-    return{name:p.name||'',url:p.permalink||'',price:pr?`$${pr.toFixed(2)}`:'',priceNum:pr||9999,
-      stock:p.stock_status==='onbackorder'?'Pre-order':inStock?'En stock':'Sin stock'};
+    const inStock = p.is_in_stock !== false && p.stock_status !== 'outofstock';
+    const pr = p.prices?.price ? parseInt(p.prices.price)/100 : null;
+    // Pre-order: WooCommerce uses stock_status='onbackorder' or category/tag 'pre-order'
+    const cats = (p.categories||[]).map(c=>(c.name||'').toLowerCase()).join(' ');
+    const tags = (p.tags||[]).map(t=>(t.name||'').toLowerCase()).join(' ');
+    const name = (p.name||'').toLowerCase();
+    let stock;
+    if (p.stock_status === 'onbackorder' ||
+        cats.includes('pre-order') || cats.includes('preorder') ||
+        tags.includes('pre-order') || tags.includes('preorder') ||
+        name.includes('pre-order') || name.includes('preorder')) {
+      stock = 'Pre-order';
+    } else if (!inStock) {
+      stock = 'Sin stock';
+    } else {
+      stock = 'En stock';
+    }
+    return {
+      name: p.name||'',
+      url: p.permalink||'',
+      price: pr ? `$${pr.toFixed(2)}` : '',
+      priceNum: pr||9999,
+      stock
+    };
   }).filter(p=>p.name);
 }
 function shopPrice(p){ if(p.price) return `$${(parseFloat(p.price)/100).toFixed(2)}`; if(p.variants?.[0]?.price) return `$${p.variants[0].price}`; return ''; }
