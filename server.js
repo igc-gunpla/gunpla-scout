@@ -50,59 +50,57 @@ function parseNewtypeHTML(html) {
   const items = [];
   const seen = new Set();
 
-  // Match product links: /p/ID/h/slug
+  // Collect all product link positions first
   const linkRegex = /href="(\/p\/[^\/]+\/h\/([^"]+))"/g;
+  const matches = [];
   let match;
-
   while ((match = linkRegex.exec(html)) !== null) {
-    const path  = match[1];
-    const slug  = match[2]; // e.g. "mg-gn-003-gundam-kyrios"
-    if (seen.has(path)) continue;
-    seen.add(path);
+    const path = match[1];
+    const slug = match[2];
+    if (!seen.has(path)) {
+      seen.add(path);
+      matches.push({ path, slug, index: match.index });
+    }
+  }
 
+  for (let i = 0; i < matches.length && items.length < 12; i++) {
+    const { path, slug, index } = matches[i];
     const fullUrl = 'https://newtype.us' + path;
 
-    // Get surrounding block (1200 chars) to find name and price
-    const block = html.slice(match.index, match.index + 1200);
+    // Block spans from this product to the next (or 3000 chars max)
+    const nextIndex = matches[i + 1] ? matches[i + 1].index : index + 3000;
+    const block = html.slice(index, Math.min(nextIndex, index + 3000));
 
-    // Try to extract text name from anchor or nearby tag
-    // Pattern 1: text directly after data-discover="true">
+    // Extract name
     let nameMatch = block.match(/data-discover="true">([^<]{3,120})</);
-    // Pattern 2: any text-heavy tag near the link
     if (!nameMatch) nameMatch = block.match(/class="[^"]*title[^"]*"[^>]*>([^<]{3,120})</i);
-    if (!nameMatch) nameMatch = block.match(/class="[^"]*name[^"]*"[^>]*>([^<]{3,120})</i);
-
-    // Fallback: build name from slug (mg-gn-003-gundam-kyrios → MG GN-003 Gundam Kyrios)
-    let name = nameMatch
+    const name = nameMatch
       ? nameMatch[1].trim()
       : slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
     if (!name || name.length < 3) continue;
 
-    // Extract price — handles $19.99 and $<!-- -->19.99
-    const priceMatch = block.match(/\$(?:<!--[^>]*-->)?(\d[\d,]*\.?\d*)/);
+    // Extract price — search whole block
+    const priceMatch = block.match(/\$(?:<!--[^-]*-->)?(\d[\d,]*\.\d{2})/);
     const price = priceMatch ? `$${priceMatch[1]}` : '';
+
+    // Debug first item price
+    if (items.length === 0) {
+      const dIdx = block.indexOf('$');
+      if (dIdx > -1) {
+        console.log(`[Newtype] $ found at pos ${dIdx} in block of ${block.length}: ${block.slice(Math.max(0,dIdx-20), dIdx+60).replace(/\n/g,' ')}`);
+      } else {
+        console.log(`[Newtype] No $ in block of ${block.length} chars`);
+      }
+    }
 
     // Stock detection
     const blockLower = block.toLowerCase();
     let stock = 'En stock';
-    if (blockLower.includes('sold out') || blockLower.includes('out of stock')) {
-      stock = 'Sin stock';
-    } else if (blockLower.includes('pre-order') || blockLower.includes('coming soon')) {
-      stock = 'Pre-order';
-    } else if (blockLower.includes('< 10') || blockLower.includes('low stock')) {
-      stock = '< 10 unid.';
-    }
+    if (blockLower.includes('sold out') || blockLower.includes('out of stock')) stock = 'Sin stock';
+    else if (blockLower.includes('pre-order') || blockLower.includes('coming soon')) stock = 'Pre-order';
+    else if (blockLower.includes('< 10') || blockLower.includes('low stock')) stock = '< 10 unid.';
 
-    // Debug price on first item only
-    if (items.length === 0) {
-      const priceArea = block.slice(0, 800);
-      const dollarIdx = priceArea.indexOf('$');
-      if (dollarIdx > -1) console.log(`[Newtype] Price area: ${priceArea.slice(Math.max(0,dollarIdx-30), dollarIdx+80).replace(/\n/g,' ')}`);
-      else console.log('[Newtype] No $ found in first block');
-    }
     items.push({ name, url: fullUrl, price, stock });
-    if (items.length >= 12) break;
   }
 
   return items;
