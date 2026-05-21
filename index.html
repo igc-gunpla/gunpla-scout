@@ -344,44 +344,21 @@ async function fetchStore(storeId,q){
 }
 
 function parseUSAGS(json){
-
-  // Shopify AJAX Predictive Search
+  if (json?.items) {
+    return json.items.map(p=>({
+      name: p.name||'', url: p.url||'', price: p.price||'',
+      priceNum: p.price ? parseFloat(p.price.replace(/[^0-9.]/g,''))||9999 : 9999,
+      stock: p.stock||'En stock'
+    })).filter(p=>p.name);
+  }
   const results = json?.resources?.results?.products || [];
-
   return results.map(p=>({
-
-    name: p.title || p.name || '',
-
-    url: p.url
-      ? (p.url.startsWith('http')
-          ? p.url
-          : 'https://www.usagundamstore.com' + p.url)
-      : '',
-
-    // USAGS predictive search already returns normal dollar values
-    price: p.price_min
-      ? `$${parseFloat(p.price_min).toFixed(2)}`
-      : (p.price
-          ? `$${parseFloat(p.price).toFixed(2)}`
-          : (p.variants?.[0]?.price
-              ? `$${parseFloat(p.variants[0].price).toFixed(2)}`
-              : '')),
-
-    priceNum: p.price_min
-      ? parseFloat(p.price_min)
-      : (p.price
-          ? parseFloat(p.price)
-          : (p.variants?.[0]?.price
-              ? parseFloat(p.variants[0].price)
-              : 9999)),
-
-    stock:
-      p.available !== false &&
-      p.available_for_sale !== false
-        ? 'En stock'
-        : 'Sin stock'
-
-  })).filter(p => p.name);
+    name: p.title||p.name||'',
+    url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
+    price: p.price_min ? `$${parseFloat(p.price_min).toFixed(2)}` : '',
+    priceNum: p.price_min ? parseFloat(p.price_min) : 9999,
+    stock: p.available_for_sale===false ? 'Sin stock' : 'En stock'
+  })).filter(p=>p.name);
 }
 function parseNewtype(json){
   // Server now returns {items: [...]} from HTML scraping
@@ -399,11 +376,19 @@ function parseNewtype(json){
   return p.map(p=>({name:p.title||'',url:p.url?'https://newtype.us'+p.url:'',price:shopPrice(p),priceNum:shopPriceNum(p),stock:p.available_for_sale!==false?'En stock':'Sin stock'})).filter(p=>p.name);
 }
 function parseGpros(json){
-  const p=Array.isArray(json)?json:(json?.products||[]);
-  return p.map(p=>{
+  if (json?.items) {
+    return json.items.map(p=>({
+      name: p.name||'', url: p.url||'', price: p.price||'',
+      priceNum: p.price ? parseFloat(p.price.replace(/[^0-9.]/g,''))||9999 : 9999,
+      stock: p.stock||'En stock'
+    })).filter(p=>p.name);
+  }
+  const prods=Array.isArray(json)?json:(json?.products||[]);
+  return prods.map(p=>{
     const inStock=p.is_in_stock!==false&&p.stock_status!=='outofstock';
     const pr=p.prices?.price?parseInt(p.prices.price)/100:null;
-    return{name:p.name||'',url:p.permalink||'',price:pr?`$${pr.toFixed(2)}`:'',priceNum:pr||9999,stock:p.stock_status==='onbackorder'?'Pre-order':inStock?'En stock':'Sin stock'};
+    return{name:p.name||'',url:p.permalink||'',price:pr?`$${pr.toFixed(2)}`:'',priceNum:pr||9999,
+      stock:p.stock_status==='onbackorder'?'Pre-order':inStock?'En stock':'Sin stock'};
   }).filter(p=>p.name);
 }
 function shopPrice(p){ if(p.price) return `$${(parseFloat(p.price)/100).toFixed(2)}`; if(p.variants?.[0]?.price) return `$${p.variants[0].price}`; return ''; }
@@ -412,7 +397,7 @@ function shopPriceNum(p){ if(p.price) return parseFloat(p.price)/100; if(p.varia
 function sortItems(items){
   const m=sortSel.value; if(m==='none') return items;
   const c=[...items];
-  const so=s=>{if(!s)return 0;const l=s.toLowerCase();if(l.includes('en stock'))return 0;if(l.includes('pre'))return 1;return 2;};
+  const so=s=>{if(!s)return 0;const l=s.toLowerCase();if(l.includes('en stock'))return 0;if(l.includes('pre')||l.includes('order')||l.includes('coming'))return 1;if(l.includes('< 10')||l.includes('pocas'))return 2;return 3;};
   if(m==='smart') c.sort((a,b)=>{const d=so(a.stock)-so(b.stock);return d!==0?d:(a.priceNum||9999)-(b.priceNum||9999);});
   else if(m==='price_asc') c.sort((a,b)=>(a.priceNum||9999)-(b.priceNum||9999));
   else if(m==='price_desc') c.sort((a,b)=>(b.priceNum||9999)-(a.priceNum||9999));
@@ -448,8 +433,8 @@ function renderStore(s,data){
     return `<a class="pcard" href="${esc(item.url)}" target="_blank" title="${esc(item.name)}"><div class="pinfo"><div class="pname">${esc(item.name)}</div>${pr}</div><span class="spill ${cls}">${lbl}</span></a>`;
   }).join('');
 }
-function sClass(s){if(!s)return 's-in';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 's-out';if(l.includes('pre')||l.includes('back'))return 's-pre';return 's-in';}
-function sLabel(s){if(!s)return 'En stock';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 'Sin stock';if(l.includes('pre')||l.includes('back'))return 'Pre-order';return 'En stock';}
+function sClass(s){if(!s)return 's-in';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 's-out';if(l.includes('pre')||l.includes('back')||l.includes('coming')||l.includes('order'))return 's-pre';if(l.includes('< 10')||l.includes('pocas')||l.includes('low'))return 's-low';return 's-in';}
+function sLabel(s){if(!s)return 'En stock';const l=s.toLowerCase();if(l.includes('sin')||l.includes('out')||l.includes('sold'))return 'Sin stock';if(l.includes('pre')||l.includes('back')||l.includes('coming')||l.includes('order'))return 'Pre-order';if(l.includes('< 10')||l.includes('pocas')||l.includes('low'))return '< 10 ud.';return 'En stock';}
 function enc(s){return encodeURIComponent(s);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 

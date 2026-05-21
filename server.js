@@ -1,6 +1,6 @@
-const http     = require('http');
-const url      = require('url');
-const axios    = require('axios');
+const http      = require('http');
+const url       = require('url');
+const axios     = require('axios');
 const NodeCache = require('node-cache');
 
 const PORT = process.env.PORT || 3000;
@@ -13,20 +13,23 @@ function buildApiUrl(storeId, query) {
   const q = encodeURIComponent(query);
   switch (storeId) {
     case 'usags':
-      return `https://www.usagundamstore.com/search/suggest.json?q=${q}&resources[type]=product&resources[limit]=12&section_id=predictive-search`;
+      // Scrape HTML search page to detect class="flag preorder"
+      const usagsSearch = `https://www.usagundamstore.com/search?q=${q}&type=product`;
+      return usagsSearch; // fetched directly, no scraper needed (Shopify allows it)
     case 'newtype':
-      // Scrape search results page via ScraperAPI (suggest.json returns HTML, not JSON)
       const newtypeSearch = `https://newtype.us/search?q=${q}&type=product`;
       return `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(newtypeSearch)}&country_code=us&render=true`;
     case 'gpros':
-      return `https://www.gundampros.shop/wp-json/wc/store/v1/products?search=${q}&per_page=12&status=publish`;
+      // Scrape HTML search page to detect class="on-preorder"
+      const gprosSearch = `https://www.gundampros.shop/?s=${q}&post_type=product`;
+      return gprosSearch;
     default:
       return null;
   }
 }
 
 // ── FETCH ─────────────────────────────────────────────────────────────────────
-async function fetchUrl(targetUrl) {
+async function fetchUrl(targetUrl, timeout = 20000) {
   const response = await axios.get(targetUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -35,7 +38,7 @@ async function fetchUrl(targetUrl) {
       'Cache-Control': 'no-cache',
       'Referer': 'https://www.google.com/'
     },
-    timeout: 30000,
+    timeout,
     maxRedirects: 5,
     validateStatus: () => true,
     responseType: 'text'
@@ -43,15 +46,115 @@ async function fetchUrl(targetUrl) {
   return { status: response.status, body: response.data };
 }
 
+// ── USAGS HTML PARSER ─────────────────────────────────────────────────────────
+// Detects class="flag preorder" or class="related-stock preorder"
+function parseUSAGSHTML(html) {
+  const items = [];
+  const seen = new Set();
+
+  // Shopify search: products are in grid items with /products/ links
+  // Split by product card boundaries
+  const cardRegex = /href="(\/products\/([^"?#]+))"[^>]*>/g;
+  let match;
+
+  while ((match = cardRegex.exec(html)) !== null) {
+    const path = match[1];
+    const slug = match[2];
+    if (seen.has(path)) continue;
+    seen.add(path);
+
+    const fullUrl = 'https://www.usagundamstore.com' + path;
+    const block = html.slice(Math.max(0, match.index - 200), match.index + 2000);
+
+    // Name: look for heading text near the link
+    let name = '';
+    const nameMatch = block.match(/class="[^"]*(?:card__heading|product[_-]title|product[_-]name|full-unstyled-link)[^"]*"[^>]*>(?:<[^>]+>)*([^<]{3,120})/i);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    } else {
+      // Fallback: use slug
+      name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    if (!name || name.length < 3) continue;
+
+    // Price
+    const priceMatch = block.match(/\$[\d,]+\.?\d*/);
+    const price = priceMatch ? priceMatch[0] : '';
+
+    // Stock — detect preorder class first, then sold out
+    const blockLower = block.toLowerCase();
+    let stock = 'En stock';
+    if (blockLower.includes('flag preorder') || blockLower.includes('related-stock preorder') ||
+        blockLower.includes('preorder') || blockLower.includes('pre-order')) {
+      stock = 'Pre-order';
+    } else if (blockLower.includes('sold-out') || blockLower.includes('sold_out') ||
+               blockLower.includes('out-of-stock') || blockLower.includes('"sold out"') ||
+               blockLower.includes('>sold out<') || blockLower.includes('badge--sold')) {
+      stock = 'Sin stock';
+    }
+
+    items.push({ name, url: fullUrl, price, stock });
+    if (items.length >= 12) break;
+  }
+
+  return items;
+}
+
+// ── GPROS HTML PARSER ─────────────────────────────────────────────────────────
+// WooCommerce — detects class="onsale on-preorder" and outofstock
+function parseGPROSHTML(html) {
+  const items = [];
+  const seen = new Set();
+
+  // WooCommerce product cards: li.product with /product/ links
+  const cardRegex = /href="(https?:\/\/www\.gundampros\.shop\/product\/([^"?#\/]+)\/?)"[^>]*>/g;
+  let match;
+
+  while ((match = cardRegex.exec(html)) !== null) {
+    const fullUrl = match[1];
+    const slug = match[2];
+    if (seen.has(fullUrl)) continue;
+    seen.add(fullUrl);
+
+    const block = html.slice(Math.max(0, match.index - 500), match.index + 2000);
+    const blockLower = block.toLowerCase();
+
+    // Name
+    let name = '';
+    const nameMatch = block.match(/class="[^"]*woocommerce-loop-product__title[^"]*"[^>]*>([^<]{3,120})/i);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    } else {
+      name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    if (!name || name.length < 3) continue;
+
+    // Price
+    const priceMatch = block.match(/\$[\d,]+\.?\d*/);
+    const price = priceMatch ? priceMatch[0] : '';
+
+    // Stock — check preorder class first
+    let stock = 'En stock';
+    if (blockLower.includes('on-preorder') || blockLower.includes('preorder now') ||
+        blockLower.includes('pre-order now') || blockLower.includes('class="onsale on-preorder"')) {
+      stock = 'Pre-order';
+    } else if (blockLower.includes('outofstock') || blockLower.includes('out-of-stock') ||
+               blockLower.includes('out of stock')) {
+      stock = 'Sin stock';
+    }
+
+    items.push({ name, url: fullUrl, price, stock });
+    if (items.length >= 12) break;
+  }
+
+  return items;
+}
+
 // ── NEWTYPE HTML PARSER ───────────────────────────────────────────────────────
-// Newtype structure: product links are at the top of the HTML,
-// prices and stock tags appear later in a separate section in the same order.
-// Format: <span>$81</span> and <div class="stock-tag bg-green ...">In stock</div>
 function parseNewtypeHTML(html) {
   const items = [];
   const seen = new Set();
 
-  // 1. Collect all product links in order
   const linkRegex = /href="(\/p\/[^\/]+\/h\/([^"]+))"/g;
   const matches = [];
   let match;
@@ -65,42 +168,34 @@ function parseNewtypeHTML(html) {
   }
   if (!matches.length) return items;
 
-  // 2. Collect all prices in order: <span>$XX</span> or <span>$XX.XX</span>
-  const priceRegex = /<span>\$(\d[\d,]*(?:\.\d{1,2})?)<\/span>/g;
+  // Prices: <span>$XX</span>
+  const priceRegex = /<span>\$([\d,]+(?:\.\d{1,2})?)<\/span>/g;
   const prices = [];
   let pm;
-  while ((pm = priceRegex.exec(html)) !== null) {
-    prices.push(`$${pm[1]}`);
-  }
+  while ((pm = priceRegex.exec(html)) !== null) prices.push(`$${pm[1]}`);
 
-  // 3. Collect all stock tags in order: stock-tag bg-green = in stock, bg-red/gray = out
+  // Stock tags
   const stockRegex = /stock-tag[^"]*"[^>]*>([^<]+)</g;
   const stocks = [];
   let sm;
   while ((sm = stockRegex.exec(html)) !== null) {
     const txt = sm[1].trim().toLowerCase();
-    if (txt.includes('in stock') || txt.includes('available')) stocks.push('En stock');
+    if (txt.includes('pre') || txt.includes('coming') || txt.includes('order')) stocks.push('Pre-order');
     else if (txt.includes('out') || txt.includes('sold')) stocks.push('Sin stock');
-    else if (txt.includes('pre') || txt.includes('coming')) stocks.push('Pre-order');
     else if (txt.includes('< 10') || txt.includes('low')) stocks.push('< 10 unid.');
     else stocks.push('En stock');
   }
 
-  console.log(`[Newtype] prices found: ${prices.length}, stocks found: ${stocks.length}, products: ${matches.length}`);
-
-  // 4. Associate by index order
   for (let i = 0; i < matches.length && items.length < 12; i++) {
     const { path, slug } = matches[i];
-    const fullUrl = 'https://newtype.us' + path;
-
-    // Name from slug
     const name = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     if (!name || name.length < 3) continue;
-
-    const price = prices[i] || '';
-    const stock = stocks[i] || 'En stock';
-
-    items.push({ name, url: fullUrl, price, stock });
+    items.push({
+      name,
+      url: 'https://newtype.us' + path,
+      price: prices[i] || '',
+      stock: stocks[i] || 'En stock'
+    });
   }
 
   return items;
@@ -116,7 +211,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url === '/' || req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', service: 'Gunpla Scout API v6' }));
+    res.end(JSON.stringify({ status: 'ok', service: 'Gunpla Scout API v7' }));
     return;
   }
 
@@ -147,75 +242,35 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const result = await fetchUrl(apiUrl);
+      const timeout = storeId === 'newtype' ? 30000 : 12000;
+      const result = await fetchUrl(apiUrl, timeout);
 
       if (result.status !== 200) {
         const errData = { error: `HTTP ${result.status}` };
-        cache.set(cacheKey, errData);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(errData));
         return;
       }
 
-      // ── NEWTYPE: parse HTML response ──────────────────────────────────────
-      if (storeId === 'newtype') {
-        const html = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
+      const html = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
 
-        console.log(`[Newtype] HTML length: ${html.length}`);
-        // Look for /p/ links to confirm products loaded
-        const pCount = (html.match(/href="\/p\//g) || []).length;
-        console.log(`[Newtype] Product links found: ${pCount}`);
-        if (pCount > 0) {
-          const pIdx = html.indexOf('href="/p/');
-          console.log(`[Newtype] First product: ${html.slice(pIdx, pIdx+300).replace(/\n/g,' ')}`);
-        } else {
-          const mid = Math.floor(html.length / 2);
-          console.log(`[Newtype] Mid sample (no products): ${html.slice(mid, mid+400).replace(/\n/g,' ')}`);
-        }
-
-        // Check if Cloudflare blocked us
-        if (html.includes('cf-challenge') || html.includes('Attention Required') || html.includes('Just a moment')) {
-          console.log('[Newtype] BLOCKED by Cloudflare');
-          const errData = { error: 'Cloudflare block — intentar más tarde' };
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(errData));
-          return;
-        }
-
-        const items = parseNewtypeHTML(html);
-        console.log(`[Newtype] Items found: ${items.length}`);
-        if (items.length > 0) console.log(`[Newtype] First item: ${JSON.stringify(items[0])}`);
-
-        const data = { items };
-        cache.set(cacheKey, data);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-        return;
-      }
-
-      // ── USAGS / GPROS: JSON response ──────────────────────────────────────
-      let jsonData;
-      try {
-        jsonData = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
-      } catch(e) {
-        const errData = { error: 'Invalid JSON from store' };
+      // Cloudflare check
+      if (html.includes('cf-challenge') || html.includes('Just a moment') || html.includes('Attention Required')) {
+        const errData = { error: 'Cloudflare block' };
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(errData));
         return;
       }
 
-      const bodyString = JSON.stringify(jsonData);
-      if (bodyString.includes('cf-challenge') || bodyString.includes('Cloudflare') || bodyString.includes('Attention Required')) {
-        const errData = { error: 'Cloudflare protection triggered' };
-        cache.set(cacheKey, errData);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(errData));
-        return;
-      }
+      let items = [];
+      if (storeId === 'usags')   items = parseUSAGSHTML(html);
+      if (storeId === 'newtype') items = parseNewtypeHTML(html);
+      if (storeId === 'gpros')   items = parseGPROSHTML(html);
 
-      cache.set(cacheKey, jsonData);
+      const data = { items };
+      cache.set(cacheKey, data);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(jsonData));
+      res.end(JSON.stringify(data));
 
     } catch (e) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -229,5 +284,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Gunpla Scout API v6 running on port ${PORT}`);
+  console.log(`Gunpla Scout API v7 running on port ${PORT}`);
 });
