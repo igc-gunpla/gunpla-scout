@@ -148,7 +148,9 @@ const server = http.createServer(async (req, res) => {
         const html = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
 
         console.log(`[Newtype] HTML length: ${html.length}`);
-        console.log(`[Newtype] First 300 chars: ${html.slice(0, 300).replace(/\n/g, ' ')}`);
+        // Log a section from the middle where products should be
+        const mid = Math.floor(html.length / 3);
+        console.log(`[Newtype] Mid sample: ${html.slice(mid, mid+600).replace(/\n/g,' ')}`);
 
         // Check if Cloudflare blocked us
         if (html.includes('cf-challenge') || html.includes('Attention Required') || html.includes('Just a moment')) {
