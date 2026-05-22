@@ -13,8 +13,8 @@ function buildApiUrl(storeId, query) {
   const q = encodeURIComponent(query);
   switch (storeId) {
     case 'usags':
-      // Shopify search.json — more accurate stock via variants[].available
-      return `https://www.usagundamstore.com/search.json?q=${q}&type=product&limit=12`;
+      // Shopify suggest.json — stable, works from server
+      return `https://www.usagundamstore.com/search/suggest.json?q=${q}&resources[type]=product&resources[limit]=12&section_id=predictive-search`;
     case 'newtype':
       // ScraperAPI with JS rendering — Newtype is React/Next.js
       const newtypeUrl = `https://newtype.us/search?q=${q}&type=product`;

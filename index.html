@@ -344,36 +344,20 @@ async function fetchStore(storeId,q){
 }
 
 function parseUSAGS(json){
-  // search.json returns {results: [...]} with variants for accurate stock
-  const prods = json?.results || json?.resources?.results?.products || [];
+  // suggest.json → resources.results.products
+  const prods = json?.resources?.results?.products || [];
   return prods.map(p=>{
-    // Price from variants (search.json gives price in dollars directly)
-    const variants = p.variants || [];
-    const availableVariant = variants.find(v => v.available);
-    const anyVariant = variants[0];
-    const priceRaw = availableVariant?.price || anyVariant?.price || p.price || null;
-    const priceNum = priceRaw ? parseFloat(priceRaw) : 9999;
+    const priceNum = p.price_min ? parseFloat(p.price_min) : (p.price ? parseFloat(p.price) : 9999);
     const price = priceNum < 9999 ? `$${priceNum.toFixed(2)}` : '';
-
-    // Stock — check all variants: if ANY available → En stock
-    const anyAvailable = variants.length
-      ? variants.some(v => v.available === true)
-      : p.available !== false;
-
-    // Pre-order via tags
-    const tags = (p.tags || '').toLowerCase();
+    const tags  = (p.tags || []).join(' ').toLowerCase();
     const title = (p.title||'').toLowerCase();
-    let stock;
+    let stock = 'En stock';
     if (tags.includes('preorder') || tags.includes('pre-order') ||
-        tags.includes('pre order') || title.includes('preorder') ||
-        title.includes('pre-order')) {
+        title.includes('preorder') || title.includes('pre-order')) {
       stock = 'Pre-order';
-    } else if (!anyAvailable) {
+    } else if (p.available_for_sale === false) {
       stock = 'Sin stock';
-    } else {
-      stock = 'En stock';
     }
-
     return {
       name: p.title||'',
       url: p.url ? (p.url.startsWith('http') ? p.url : 'https://www.usagundamstore.com'+p.url) : '',
